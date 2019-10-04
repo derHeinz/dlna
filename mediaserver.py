@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree as ET
+import random
 
 from . dlna_helper import XML_HEADER, NAMESPACE_DIDL, NAMESPACE_DC, NAMESPACE_UPNP, create_header, send_request
 
@@ -25,6 +26,10 @@ class Item():
     def get_url(self):
         e = self._element.find('d:res', {'d': NAMESPACE_DIDL})
         return e.text
+        
+    def get_res(self):
+        e = self._element.find('d:res', {'d': NAMESPACE_DIDL})
+        return e
         
     def get_item(self):
         return self._element
@@ -54,9 +59,13 @@ class SearchResponse():
         first_item = self._result_root.find('r:item', {'r': 'urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/'})
         if (first_item is not None):
             return Item(first_item)
-            
         return None
         
+    def random_item(self):
+        all_item = self._result_root.findall('r:item', {'r': 'urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/'})
+        if all_item == None or len(all_item) == 0:
+            return None
+        return Item(random.choice(all_item))
 
 class MediaServer():
 
