@@ -47,8 +47,12 @@ class Player():
         # prepare metadata
         encoded_meta = ''
         if (self._renderer.include_metadata()):
-            prepared_metadata = self.META_DATA.format(id=kwargs['title'], title=kwargs['title'])
-            encoded_meta = html.escape(prepared_metadata)
+            if ('metadata' in kwargs):
+                prepared_metadata = kwargs['metadata']
+                encoded_meta = self._escape(prepared_metadata)
+            else:
+                prepared_metadata = self.META_DATA.format(id=kwargs['title'], title=kwargs['title'])
+                encoded_meta = self._escape(prepared_metadata)
         #urllib.parse.quote(meta)
         prepare_body = self.PREPARE_BODY.format(url=url_to_play, metadata=encoded_meta)
         self._send_request('SetAVTransportURI', prepare_body)
@@ -56,6 +60,13 @@ class Player():
         #play SOAP message
         play_body = self.PLAY_BODY
         self._send_request('Play', play_body)
+        
+    def _escape(self, str):
+        str = str.replace(b"&", b"&amp;")
+        str = str.replace(b"<", b"&lt;")
+        str = str.replace(b">", b"&gt;")
+        str = str.replace(b"\"", b"&quot;")
+        return str
         
     def position_info(self):
         body = self.POS_INFO_BODY
