@@ -92,13 +92,16 @@ class MediaServer():
         
     def search(self, title=None, artist=None):
         search_query_additionals = ''
-        if (title is not None):
+        if (not self._is_blank(title)):
             search_query_additionals+=(self.TITLE_PATTERN.format(q=title))
-        if (artist is not None):
+        if (not self._is_blank(artist)):
             search_query_additionals+=(self.ARTIST_PATTERN.format(q=artist))
         query = self.QUERY.format(criteria=search_query_additionals)
         result = self._send_request(self._create_header(), query)
         return SearchResponse(result.decode("utf-8"))
+        
+    def _is_blank(self, str):
+        return not (str and str.strip())
         
     def _send_request(self, header, body):
         return send_request(self._url, header, body)
