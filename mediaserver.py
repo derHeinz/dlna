@@ -4,7 +4,7 @@
 import xml.etree.ElementTree as ET
 import random
 
-from . dlna_helper import XML_HEADER, NAMESPACE_DIDL, NAMESPACE_DC, NAMESPACE_UPNP, create_header, send_request
+from . dlna_helper import XML_HEADER, NAMESPACE_DIDL, NAMESPACE_DC, NAMESPACE_UPNP, create_header, send_request, namespace_free_res_element
 
 class Item():
     
@@ -30,6 +30,14 @@ class Item():
     def get_res(self):
         e = self._element.find('d:res', {'d': NAMESPACE_DIDL})
         return e
+        
+    def get_res_as_string(self):
+        res = ET.tostring(self.get_res(), encoding="utf-8", method="xml")
+        # we need res to be of type str here
+        if type(res) is bytes:
+            #print("res is of type bytes, reformatting")
+            res = res.decode('utf-8')
+        return namespace_free_res_element(res)
         
     def get_item(self):
         return self._element
