@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import uuid
+import xml.etree.ElementTree as ET
 
 from . dlna_helper import XML_HEADER, create_header, send_request
+
 
 class Player():
 
@@ -31,7 +33,7 @@ class Player():
         </item>
     </DIDL-Lite>
     '''
-    
+
     # play should get the variable: speed
     PLAY_BODY =       XML_HEADER + '<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:Play xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Play></s:Body></s:Envelope>'
     PAUSE_BODY =      XML_HEADER + '<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:Pause xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID></u:Pause></s:Body></s:Envelope>'
@@ -41,21 +43,21 @@ class Player():
     # should get the variabl: url and metadata
     PREPARE_BODY =    XML_HEADER + '<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><CurrentURI>{url}</CurrentURI><CurrentURIMetaData>{metadata}</CurrentURIMetaData></u:SetAVTransportURI></s:Body></s:Envelope>'
     PREPARE_BODY_2 =  XML_HEADER + '<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><CurrentURI>{url}</CurrentURI></u:SetAVTransportURI></s:Body></s:Envelope>'
-    
+
     # should get the variabl: url and metadata
     PREPARE_NEXT_BODY = '<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><NextURI>{url}</NextURI><NextURIMetaData>{metadata}</NextURIMetaData></u:SetAVTransportURI></s:Body></s:Envelope>'
-    
+
     def __init__(self, renderer):
         self._renderer = renderer
-        
+
     def stop(self):
         body = self.STOP_BODY
         self._send_request('Stop', body)
-        
+
     def pause(self):
         body = self.PAUSE_BODY
         self._send_request('Pause', body)
-        
+
     def play(self, url_to_play, **kwargs):
         # prepare metadata
         encoded_meta = ''
@@ -67,37 +69,48 @@ class Player():
                 encoded_meta = self._escape(self._clean(prepared_metadata))
             elif ('metadata_raw' in kwargs):
                 encoded_meta = kwargs['metadata_raw']
-        #urllib.parse.quote(meta)
+        # urllib.parse.quote(meta)
         prepare_body = self.PREPARE_BODY.format(url=url_to_play, metadata=encoded_meta)
         self._send_request('SetAVTransportURI', prepare_body)
-        
-        #play SOAP message
+
+        # play SOAP message
         play_body = self.PLAY_BODY
         self._send_request('Play', play_body)
-        
-    
+
     def _escape(self, str):
         str = str.replace("&", "&amp;")
         str = str.replace("<", "&lt;")
         str = str.replace(">", "&gt;")
-        #str = str.replace(b"\"", b"&quot;")
         return str
-        
+
     def _clean(self, str):
         result = str.strip()
         result = " ".join(result.split())
         return result
-        
+
     def position_info(self):
-        body = self.POS_INFO_BODY
-        self._send_request('GetPositionInfo', body)
-        
+        response = self._send_request('GetPositionInfo', self.POS_INFO_BODY)
+        xml_content = ET.fromstring(response.read().decode('utf-8'))
+        getPositionInfoResponse = xml_content.find(".//{urn:schemas-upnp-org:service:AVTransport:1}GetPositionInfoResponse")
+        result = {}
+
+        for child in getPositionInfoResponse:
+            result[child.tag] = child.text
+
+        return result
+
     def transport_info(self):
-        body = self.TRANS_INFO_BODY
-        self._send_request('GetTransportInfo', body)
-        
+        response = self._send_request('GetTransportInfo', self.TRANS_INFO_BODY)
+        xml_content = ET.fromstring(response.read().decode('utf-8'))
+        getPositionInfoResponse = xml_content.find(".//{urn:schemas-upnp-org:service:AVTransport:1}GetTransportInfoResponse")
+        result = {}
+
+        for child in getPositionInfoResponse:
+            result[child.tag] = child.text
+
+        return result
+
     def _send_request(self, header_keyword, body):
         device_url = self._renderer.get_url()
         header = create_header('AVTransport', header_keyword)
-        send_request(device_url, header, body)
-        
+        return send_request(device_url, header, body)
