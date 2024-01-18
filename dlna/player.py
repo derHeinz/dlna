@@ -52,11 +52,11 @@ class Player():
 
     def stop(self):
         body = self.STOP_BODY
-        self._send_request('Stop', body)
+        return self._send_request('Stop', body)
 
     def pause(self):
         body = self.PAUSE_BODY
-        self._send_request('Pause', body)
+        return self._send_request('Pause', body)
 
     def play(self, url_to_play, **kwargs):
         # prepare metadata
@@ -75,7 +75,7 @@ class Player():
 
         # play SOAP message
         play_body = self.PLAY_BODY
-        self._send_request('Play', play_body)
+        return self._send_request('Play', play_body)
 
     def _escape(self, str):
         str = str.replace("&", "&amp;")
